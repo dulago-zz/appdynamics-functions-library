@@ -511,12 +511,9 @@ function global:Get-Agent {
     }
 }
 
-function installAgentBatch ($serverList, $MSIFIle, [bool] $restartIIS) {
-    $updated = 0
-    $noAccess = 0
-    $notUpdated = 0
-    $updateError = 0
-    
+# install or update the .NET Agent of a given list of Windows machines
+function installAgentBatch ($serverList, $MSIFIle, [Switch] $restartIIS) {
+    $updated, $noAccess, $notUpdated, $updateError = 0    
 
     Write-Host "$(Get-Date) Reading server list"
     $serverList = Get-Content -Path 'serverList.txt' 
