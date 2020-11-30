@@ -233,7 +233,7 @@ function getAppDependenciesWithType ($appName, $accountName, $connection) {
 function exportDependenciesCSV ($appName, $accountName, $connection, $outputFilename) {
     $dependencies = getAppDependenciesWithType -appName $appName -accountName $accountName -connection $connection
     if ($outputFilename -eq $null) {
-        $outputFilename = "$appName.csv"
+        $outputFilename = "output.csv"
     }    
     foreach ($dependency in $dependencies) {
         # Add-Content -Path $filename -Value "$appName, $dependency" -Force
