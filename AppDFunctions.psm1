@@ -1,12 +1,6 @@
 # discontinued. Use getConnection instead
 function getLoginHeaders ($accountName, $username, $password) 
-{  
-    ##MOCK
-    # $username = "132161"
-    # $password = ""
-    # $accountName = "localizabrasil"
-    ##
-    
+{   
     $pair = -join ($username, "@", $accountName, ":", $password)
     $bytes = [System.Text.Encoding]::ASCII.GetBytes($pair)
     $base64 = [System.Convert]::ToBase64String($bytes)
@@ -22,7 +16,7 @@ function getLoginHeaders ($accountName, $username, $password)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error obtaining login headers (Status code $StatusCode)"       
+        return "[ERROR] Error obtaining login headers (Status code $StatusCode)"       
     }
 
     $token = $response.Headers.'Set-Cookie' -split "="
@@ -35,12 +29,6 @@ function getLoginHeaders ($accountName, $username, $password)
 # discontinued. Use getConnection instead
 function getLoginSession ($accountName, $username, $password) 
 {
-    ##MOCK
-    # $username = "132161"
-    # $password = ""
-    # $accountName = "localizabrasil"
-    ##
-    
     $pair = -join ($username, "@", $accountName, ":", $password)
     $bytes = [System.Text.Encoding]::ASCII.GetBytes($pair)
     $base64 = [System.Convert]::ToBase64String($bytes)
@@ -56,7 +44,7 @@ function getLoginSession ($accountName, $username, $password)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error obtaining login headers (Status code $StatusCode)"       
+        return "[ERROR] Error obtaining login headers (Status code $StatusCode)"       
     }
 
     return $session
@@ -80,7 +68,7 @@ function getConnection ($accountName, $username, $password)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error obtaining login headers (Status code $StatusCode)"       
+        return "[ERROR] Error obtaining login headers (Status code $StatusCode)"       
     }
 
     $token = $response.Headers.'Set-Cookie' -split "="
@@ -104,7 +92,7 @@ function getAppById ($appID, $accountName, $connection)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error getting app ID (Status code $StatusCode)"
+        return "[ERROR] Error getting app ID (Status code $StatusCode)"
     }
 }
 
@@ -119,7 +107,7 @@ function getIdByAppName ($appName, $accountName, $connection)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error getting app name (Status code $StatusCode)"
+        return "[ERROR] Error getting app name (Status code $StatusCode)"
     }
 }
 
@@ -134,7 +122,7 @@ function getBackendById ($backendID, $accountName, $connection)
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
         # Write-Host $StatusCode ## DEBUG
-        return "Error getting backend name (Status code $StatusCode)"
+        return "[ERROR] Error getting backend name (Status code $StatusCode)"
     }  
 }
 
@@ -149,7 +137,7 @@ function getBackendList ($appName, $accountName, $connection)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error getting backend list (Status code $StatusCode)"
+        return "[ERROR] Error getting backend list (Status code $StatusCode)"
     }
 }
 
@@ -165,7 +153,7 @@ function getAppServers ($appName, $accountName, $connection)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error getting server list (Status code $StatusCode)"
+        return "[ERROR] Error getting server list (Status code $StatusCode)"
     }
 }
 
@@ -186,7 +174,7 @@ function getAppGrid ($appName, $accountName, $connection)
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error getting app dependency grid (Status code $StatusCode)"
+        return "[ERROR] Error getting app dependency grid (Status code $StatusCode)"
     }
 }
 
@@ -621,7 +609,7 @@ function getAppAgentConfigFile ($serverName, $agentConfigFolder)
         return $appAgentConfig   
     }
     catch {
-        return "Error getting config file from remote server. Check connection and credentials"
+        return "[ERROR] Error getting config file from remote server. Check connection and credentials"
     }
 }
 
@@ -694,22 +682,75 @@ function setLicenseOnConfig ([xml]$appAgentConfig, $accountName, $connection, $l
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
-        return "Error obtaining license details (Status code $StatusCode)"
+        return "[ERROR] Error obtaining license details (Status code $StatusCode)"
     }
 }
 
 # adds an IIS web application to an appagent config file
 function setWebAppOnConfig([xml]$appAgentConfig, $appName, $appPath, $siteName)
 {
-    $childNode = $appAgentConfig.CreateElement("application", $appAgentConfig.'appdynamics-agent'.controller.applications)
-    $childNode.InnerXml = $appName
-    $appAgentConfig.'appdynamics-agent'.controller.applications.AppendChild($child)
+    $controllerApp = $appAgentConfig.CreateNode("element", "application", "")
+    $controllerApp.SetAttribute("name", $appName)
+    $appAgentConfig.'appdynamics-agent'.controller.applications.AppendChild($controllerApp)
 
+    $application = $appAgentConfig.CreateNode("element", "application", "")
+    $application.SetAttribute("controller-application", $appName)
+    $application.SetAttribute("path", $appPath)
+    $application.SetAttribute("site", $siteName)
+    $tier = $appAgentConfig.CreateNode("element", "tier", "")
+    $tier.SetAttribute("name", $appName)
+    $application.AppendChild($tier)
     
+    $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.AppendChild($application)
 }
 
-# returns an object containing all web applications on a remote server's IIS
-function getWebServerApps($serverName)
+# returns an object containing all web applications deployed on localhost's IIS 
+function getDeployedAppsLocal
 {
-    $getWebApplications 
+    $webApplications = Get-WebApplication | ConvertTo-Json | ConvertFrom-Json 
+    $i = 0
+    $appList = @{}
+    foreach ($application in $webApplications) 
+    {
+        if (Test-Path $application.PhysicalPath )
+        {
+            $site = $application.ItemXPath.Split("'")
+            $site = $site[1]
+            $appList[$i] = @{}
+            $appList[$i]["name"] = -join($site, $application.path)
+            $appList[$i]["path"] = $application.path
+            $applist[$i]["site"] = $site
+        }    
+    }
+    return $appList
+}
+
+# returns an object containing all web applications deployed on a remote server's IIS
+function getDeployedAppsRemote($serverName)
+{
+    try {
+        $webApplications = Invoke-Command -ComputerName $serverName -ScriptBlock ${function:getDeployedAppsLocal}
+        return $webApplications
+    }
+    catch {
+        return "[ERROR] Error getting deployed applications from server $serverName"
+    }    
+}
+
+# configures all deployed IIS applications on a appagent config file that are not already configured
+function setIisAppsOnConfig([xml]$appAgentConfig, $webApplications)
+{
+    for ($i = 0; $i -lt $webApplications.Count; $i++) {
+        if (($null -eq ($appAgentConfig.'appdynamics-agent'.controller.applications | findstr WebApp/localiza/NPCProcessador2)) -and ($null -eq $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications)) {
+            $appName = $webApplications["name"]
+            $appPath = $webApplications["path"]
+            $siteName = $webApplications["site"]
+            try {
+                setWebAppOnConfig -appAgentConfig $appAgentConfig -appName $appName -appPath $appPath -siteName $siteName
+            }
+            catch {
+                return "[ERROR] Unable to set application $appName on config.xml file"
+            }
+        }
+    }
 }
