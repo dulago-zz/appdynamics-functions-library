@@ -706,21 +706,26 @@ function getAppAgentConfigFile ($serverName, $agentConfigFolder)
 }
 
 # saves changes made to an appagent config file on a remote server
-function saveAppAgentConfigFile([xml]$appAgentConfig, $serverName, $agentConfigFolder)
+function saveAppAgentConfigFile([xml]$appAgentConfig, $serverName)
 {
-    if ($null -eq $agentConfigFolder) {
-        $path = "C:\ProgramData\AppDynamics\DotNetAgent\Config\config.xml"
-    }
-    else{
-        $path = -join($agentConfigFolder, "\config.xml") 
-    }
+    $appAgentConfig.Save("$(Get-Location)\config.xml")
 
+    $scriptBlock = {
+        if(Test-Path -Path C:\ProgramData\AppDynamics\DotNetAgent\Config\config.xml -PathType Leaf)
+        {
+            Copy-Item -Path C:\ProgramData\AppDynamics\DotNetAgent\Config\config.xml -Destination C:\ProgramData\AppDynamics\DotNetAgent\Config\config.xml.bak -Force 
+        }   
+    }
     try {
-        Invoke-Command -ComputerName $serverName -ScriptBlock {$function:appAgentConfig.Save($using:path)}
+        Invoke-Command -ComputerName $serverName -ScriptBlock $scriptBlock
+        Copy-Item -Path "$(Get-Location)\config.xml" -Destination \\$serverName\c$\ProgramData\AppDynamics\DotNetAgent\Config\config.xml;
     }
     catch {
         $ErrorMessage = $_.Exception.Response.FullyQualifiedErrorId.value__
         return "[ERROR] Unable to save config file on server $serverName. Error message: $ErrorMessage"
+    }
+    finally{
+        Remove-Item -Path .\config.xml
     }
 }
 
@@ -768,6 +773,7 @@ function setEmptyConfig ([xml]$appAgentConfig)
     $applications.AppendChild($application)
     $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.AppendChild($applications)
 }
+
 
 # set controller information on an empty config file
 function setControllerOnConfig ([xml]$appAgentConfig, $accountName)
@@ -823,7 +829,7 @@ function getDeployedAppsLocal
     $appList = @{}
     foreach ($application in $webApplications) 
     {
-        if (Test-Path $application.PhysicalPath )
+        if ((Test-Path $application.PhysicalPath) -and ((Get-ChildItem ($application.PhysicalPath) | Measure-Object) -gt 0 ))
         {
             $site = $application.ItemXPath.Split("'")
             $site = $site[1]
