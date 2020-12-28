@@ -697,7 +697,7 @@ function getAppAgentConfigFile ($serverName, $agentConfigFolder)
         $path = -join($agentConfigFolder, "\config.xml") 
     }
     try {
-        [xml]$appAgentConfig = Invoke-Command -ScriptBlock {Get-Content $path}
+        [xml]$appAgentConfig = Invoke-Command -ScriptBlock {Get-Content $using:path} -ComputerName $serverName
         return $appAgentConfig   
     }
     catch {
