@@ -853,16 +853,16 @@ function getDeployedAppsRemote($serverName)
 function setIisAppsOnConfig([xml]$appAgentConfig, $webApplications)
 {
     for ($i = 0; $i -lt $webApplications.Count; $i++) {
-        if (($null -eq ($appAgentConfig.'appdynamics-agent'.controller.applications | findstr WebApp/localiza/NPCProcessador2)) -and ($null -eq $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications)) {
-            $appName = $webApplications["name"]
-            $appPath = $webApplications["path"]
-            $siteName = $webApplications["site"]
+        # if (($null -eq ($appAgentConfig.'appdynamics-agent'.controller.applications | findstr WebApp/localiza/NPCProcessador2)) -and ($null -eq $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications)) {
+            $appName = $webApplications[$i]["name"]
+            $appPath = $webApplications[$i]["path"]
+            $siteName = $webApplications[$i]["site"]
             try {
                 setWebAppOnConfig -appAgentConfig $appAgentConfig -appName $appName -appPath $appPath -siteName $siteName
             }
             catch {
                 return "[ERROR] Unable to set application $appName on config.xml file"
             }
-        }
+        # }
     }
 }
