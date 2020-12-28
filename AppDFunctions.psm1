@@ -257,71 +257,146 @@ function exportListAppDependenciesCSV ($appListFile, $accountName, $connection, 
 
 # installs or update the .NET Agent on a Windows machine (local or remote)
 # taken from https://www.appdynamics.com/community/exchange/extension/dotnet-agent-installation-with-remote-management-powershell-extension/
-function global:Install-Agent 
+function global:Install-Agent
 {
-    # [CmdletBinding()]
-    # PARAM(
-    #     [Parameter(Mandatory = $true, Position = 0)]
-    #     [ValidateScript( { (($_ -ne $null) -and ($_.Count -ge 1) -and ($_.Count -le 2)) })]
-    #     [STRING[]] $SetupFile = $null,
-    #     [Parameter(Mandatory = $false, Position = 1)]
-    #     [ValidateScript( { ($_ -eq $null) -or (Test-Path $_ -PathType Leaf) })]
-    #     [STRING] $TemplateFile = $null,
-    #     [Parameter(Mandatory = $false, ValueFromPipeline = $true)]
-    #     [STRING[]] $ComputerName = $null,
-    #     [STRING] $RemoteShare = "c$\temp\AppDynamics\Install\",
-    #     [STRING] $RemotePath = "c:\temp\AppDynamics\Install\",
+	# [CmdletBinding()]
+	# PARAM(
+    #     [Parameter(Mandatory=$true, Position=0)]
+    #       [ValidateScript({(($_ -ne $null) -and ($_.Count -ge 1) -and ($_.Count -le 2))})]
+    #       [STRING[]] $SetupFile=$null,
+    #     [Parameter(Mandatory=$false, Position=1)]
+    #       [ValidateScript({($_ -eq $null) -or (Test-Path $_ -PathType Leaf)})]
+    #       [STRING] $TemplateFile=$null,
+    #     [Parameter(Mandatory=$false, ValueFromPipeline=$true)]
+    #       [STRING[]] $ComputerName=$null,
+    #     [STRING] $RemoteShare="c$\temp\AppDynamics\Install\",
+    #     [STRING] $RemotePath="c:\temp\AppDynamics\Install\",
     #     [Switch] $RestartIIS,
     #     [Switch] $SharePointInstall,
-    #     [STRING[]] $RestartWindowsServices = $null,
-    #     [Hashtable] $Arguments = $null
-    # )
+    #     [STRING[]] $RestartWindowsServices=$null,
+    #     [Hashtable] $Arguments=$null
+	# )
 
-    # process {
-    #     #---------Start VISH---------
+    # process
+    # {
+
+    #    #---------Start VISH---------
         
-    #     function Get-WMIService {               
-    #         $ServiceName = Get-Service -Name wmiApSrv              
-    #         if ($null -ne $ServiceName) {
-    #             if ($ServiceName.Status -eq "Stopped") {   
-    #                 Write-Host "Starting Service...."
-    #                 Start-Service $ServiceName.DisplayName
-    #                 Write-Host "Starting " $ServiceName.DisplayName " Service is now started"
-    #             }
-    #             else { 
-    #                 if ($ServiceName.Status -eq "Running") { 
-    #                     Write-Host $ServiceName.DisplayName "service is already started"
+    #     function Get-WMIService
+    #       {               
+    #              $ServiceName = Get-Service -Name wmiApSrv              
+               
+    #              if ($ServiceName -ne $null)          
+    #               {
+    #                  if ($ServiceName.Status -eq "Stopped")
+    #                  {
+    #                     try {
+    #                         Start-Service $ServiceName.DisplayName | Out-File log.txt -Append    
+    #                     }
+    #                     catch {
+    #                         return "[ERROR] Unable to start WMI service on server"
+    #                     }
+                        
+                        
+    #                     #     $confirmation = Read-Host $ServiceName.DisplayName "service is stopped. Do you want to start the service and proceed installation?(Y/N)"                         
+    #                     #    if($confirmation -eq 'y') #if($ConfirmResult)
+    #                     #    {
+    #                     #         Write-Host "Starting Service...."
+    #                     #         Start-Service $ServiceName.DisplayName
+    #                     #         Write-Host "Starting " $ServiceName.DisplayName " Service is now started"
+    #                     #    }else
+    #                     #    {
+    #                     #         Write-Host $ServiceName.DisplayName "is stopped.In order to continue the installation, start the service"
+    #                     #         Throw
+    #                     #    }
+    #                     #     Write-Host "Service Stopped"
+    #                  }else{
+                     
+    #                         if ($ServiceName.Status -eq "Running")
+    #                         { 
+    #                                 #Write-Host $ServiceName.DisplayName "service is already started"
+    #                                 Add-Content log.txt "Servico WMI esta ativo`n"
+    #                         }
     #                 }
-    #             }
+    #               }else
+    #                  {
+    #                     Add-Content log.txt "Servico WMI nao encontrado`n"
+    #                  #Write-Warning $ServiceName.DisplayName "Service DoesNot Exist."
+    #                  #Throw
+                 
+    #                  } 
     #         }
-    #         else {
-    #             Write-Warning $ServiceName.DisplayName "Service DoesNot Exist."
-    #             Throw
-    #         } 
-    #     }
 
-    #     function Get-COMService {               
-    #         $ServiceName = Get-Service -Name COMSysApp               
+
+    #          function Get-COMService
+    #           {               
+    #              $ServiceName = Get-Service -Name COMSysApp               
                                  
                
-    #         if ($null -ne $ServiceName) {
-    #             if ($ServiceName.Status -eq "Stopped") {
-    #                 Write-Host "Starting Service...."  
-    #                 Start-Service $ServiceName
-    #                 Write-Host "Starting " $ServiceName.DisplayName " Service is now started"
-    #                 #Write-Host "Service Stopped"
-    #             }
-    #             elseif ($ServiceName.Status -eq "Running") { 
-    #                 Write-Host $ServiceName.DisplayName "service is already started"
-    #             }
-    #         }
-    #         else {
-    #             Write-Warning $ServiceName.DisplayName "Service DoesNot Exist."
-    #             Throw
-    #         } 
-    #     }   
+    #              if ($ServiceName -ne $null)          
+    #               {
+    #                  if ($ServiceName.Status -eq "Stopped")
+    #                  {
+    #                         #$ConfirmResult = Ask-Confirm -ServiceName $ServiceName 
+    #                         $confirmation = Read-Host $ServiceName.DisplayName "service is stopped. Do you want to start the service and proceed installation?(Y/N)"
+    #                         if($confirmation -eq 'y') #if($ConfirmResult)
+    #                         {
+    #                             Write-Host "Starting Service...."  
+    #                             Start-Service $ServiceName
+    #                             Write-Host "Starting " $ServiceName.DisplayName " Service is now started"
+    #                             #Write-Host "Service Stopped"
+    #                          }else
+    #                          {
+    #                             Write-Host $ServiceName.DisplayName "is stopped.In order to continue the installation, start the service"
+    #                             #Break
+    #                             Throw
+    #                          }
 
-    #     #---------END----------
+    #                  }else{
+                     
+    #                         if ($ServiceName.Status -eq "Running")
+    #                         { 
+    #                                 Write-Host $ServiceName.DisplayName "service is already started"
+    #                         }
+    #                 }
+    #               }else
+    #                  {
+                 
+    #                  Write-Warning $ServiceName.DisplayName "Service DoesNot Exist."
+    #                  Throw
+                 
+    #                  } 
+    #         }   
+        
+    #         <#   if($ComputerName -ne $null)
+    #             {
+    #               foreach($computer in $ComputerName)
+    #                {
+                      
+    #                   $Result =  Test-ComputerConnection($computer)
+    #                   if($Result)
+    #                    {
+    #                      if($computer -ne $null)
+    #                      {  
+    #                       $code = Get-CodeInternal(Get-Command Get-WMIService)                          
+	# 	                  Invoke-Command -ComputerName $computer -ScriptBlock $code 
+    #                       $code = Get-CodeInternal(Get-Command Get-COMService)                          
+	# 	                  Invoke-Command -ComputerName $computer -ScriptBlock $code 
+    #                      }
+                   
+    #                    }
+               
+    #                }
+    #             }
+    #             else               
+    #             {
+    #             $code = Get-CodeInternal(Get-Command Get-WMIService) 
+    #             Invoke-Command -ScriptBlock $code 
+    #             $code = Get-CodeInternal(Get-Command Get-COMService) 
+	# 	        Invoke-Command -ScriptBlock $code                 
+    #             } #>
+
+    #    #---------END----------
     #     function Setup-MsiLocal(
     #         [string] $Setup64File,
     #         [string] $Setup32File,
@@ -330,61 +405,73 @@ function global:Install-Agent
     #         [String[]] $RestartWindowsServices,
     #         [Bool] $SharePointInstall,
     #         [Hashtable] $Arguments
-    #     ) {
+    #         )
+    #     {
            
     #         $setup_file = $Setup32File
-    #         if (Get-64ArchitectureShared) { $setup_file = $Setup64File }
+	#         if(Get-64ArchitectureShared) { $setup_file = $Setup64File }
 
-    #         if (([string]::IsNullOrEmpty($setup_file) -or (-Not (Test-Path $setup_file -PathType Leaf)))) {
+    #         if(([string]::IsNullOrEmpty($setup_file) -or (-Not (Test-Path $setup_file -PathType Leaf))))
+    #         {
     #             Throw "Agent install file $setup_file is not found."
     #         }
 
     #         $version = Get-MsiProductVersionShared $setup_file
 
     #         $agent = Get-AgentShared
-    #         if ($null -ne $agent) {
+    #         if($agent -ne $null)
+    #         {
     #             $local_version = [Version]$agent.DisplayVersion
-    #             if ($version.CompareTo($local_version) -eq 1) {
+    #             if($version.CompareTo($local_version) -eq 1)
+    #             {
     #                 Stop-ApplicationShared $RestartIIS $RestartWindowsServices
     #                 $exitcode = Uninstall-AgentShared
 
-    #                 if ($exitcode -eq 0) {
+    #                 if($exitcode -eq 0)
+    #                 {
     #                     $exitcode = Install-AgentShared $setup_file $TemplateFile $Arguments
-    #                     if ($exitcode -eq 0) {
+    #                     if($exitcode -eq 0)
+    #                     {
     #                         Restart-CoordinatorShared
     #                         Start-ApplicationShared $RestartIIS $RestartWindowsServices
 
-    #                         $result = @{Result = $true; Message = ".NET agent $version successfully upgraded from $local_version." }
+    #                         $result = @{Result=$true; Message=".NET agent $version successfully upgraded from $local_version."}
     #                         New-Object PSObject –Property $result
 
     #                         RegistryChanges-Shared($SharePointInstall)
     #                     }
-    #                     else {
-    #                         $result = @{Result = $false; Message = ".NET agent $version install failed. Error code: $exitcode" }
+    #                     else
+    #                     {
+    #                         $result = @{Result=$false; Message=".NET agent $version install failed. Error code: $exitcode"}
     #                         New-Object PSObject –Property $result
     #                     }
     #                 }
-    #                 else {
-    #                     $result = @{Result = $false; Message = ".NET agent $local_version uninstall failed. Error code: $exitcode" }
+    #                 else
+    #                 {
+    #                     $result = @{Result=$false; Message=".NET agent $local_version uninstall failed. Error code: $exitcode"}
     #                     New-Object PSObject –Property $result
     #                 }
     #             }
-    #             else {
-    #                 $result = @{Result = $false; Message = "Installed version: $local_version. New version: $version. No upgrade required." }
+    #             else
+    #             {
+    #                 $result = @{Result=$false; Message="Installed version: $local_version. New version: $version. No upgrade required."}
     #                 New-Object PSObject –Property $result
     #             }
     #         }
-    #         else {
+    #         else
+    #         {
     #             $exitcode = Install-AgentShared $setup_file $TemplateFile $Arguments
-    #             if ($exitcode -ne 0) {
-    #                 $result = @{Result = $false; Message = ".NET agent $version install failed. Error code: $exitcode" }
+    #             if($exitcode -ne 0)
+    #             {
+    #                 $result = @{Result=$false; Message=".NET agent $version install failed. Error code: $exitcode"}
     #                 New-Object PSObject –Property $result
     #             }
-    #             else {
+    #             else
+    #             {
     #                 Restart-CoordinatorShared
     #                 Restart-ApplicationShared $RestartIIS $RestartWindowsServices
 
-    #                 $result = @{Result = $true; Message = ".NET agent $version successfully installed." }
+    #                 $result = @{Result=$true; Message=".NET agent $version successfully installed."}
     #                 New-Object PSObject –Property $result
 
     #                 RegistryChanges-Shared($SharePointInstall)
@@ -402,24 +489,28 @@ function global:Install-Agent
     #         [Bool] $RestartIIS,
     #         [STRING[]] $RestartWindowsServices,
     #         [bool] $SharePointInstall,
-    #         [Hashtable] $Arguments) {
+    #         [Hashtable] $Arguments)
+    #     {
     #         #Copy files for remote install
     #         [array] $files = @()
     #         [string]$remote_setup32 = $null
     #         [string]$remote_setup64 = $null
     #         [string]$remote_template = $null
             
-    #         if ((-Not [string]::IsNullOrEmpty($Setup64File)) -and (Test-Path -Path $Setup64File -PathType Leaf)) {
+    #         if((-Not [string]::IsNullOrEmpty($Setup64File)) -and (Test-Path -Path $Setup64File -PathType Leaf)) 
+    #         {
     #             $files += $Setup64File 
     #             $remote_setup64 = Join-Path -Path $RemotePath -ChildPath (Split-Path $Setup64File -Leaf)
     #         }
 
-    #         if ((-Not [string]::IsNullOrEmpty($Setup32File)) -and (Test-Path -Path $Setup32File -PathType Leaf)) {
+    #         if((-Not [string]::IsNullOrEmpty($Setup32File)) -and (Test-Path -Path $Setup32File -PathType Leaf))
+    #         {
     #             $files += $Setup32File 
     #             $remote_setup32 = Join-Path -Path $RemotePath -ChildPath (Split-Path $Setup32File -Leaf)
     #         }
 
-    #         if ((-Not [string]::IsNullOrEmpty($TemplateFile)) -and (Test-Path -Path $TemplateFile -PathType Leaf)) {
+    #         if((-Not [string]::IsNullOrEmpty($TemplateFile)) -and (Test-Path -Path $TemplateFile -PathType Leaf)) 
+    #         {
     #             $files += $TemplateFile
     #             $remote_template = Join-Path -Path $RemotePath -ChildPath (Split-Path $TemplateFile -Leaf)
     #         }
@@ -428,7 +519,7 @@ function global:Install-Agent
             
     #         #Run the installer
     #         $code = Get-CodeInternal(Get-Command Setup-MsiLocal)            
-    #         Invoke-Command -ComputerName $ComputerName -ScriptBlock $code -ArgumentList $remote_setup64, $remote_setup32, $remote_template, $RestartIIS, $RestartWindowsServices, $SharePointInstall , $Arguments | select -ExcludeProperty RunspaceId
+	#         Invoke-Command -ComputerName $ComputerName -ScriptBlock $code -ArgumentList $remote_setup64, $remote_setup32, $remote_template, $RestartIIS, $RestartWindowsServices, $SharePointInstall ,$Arguments | select -ExcludeProperty RunspaceId
     #     }
 
 
@@ -436,41 +527,48 @@ function global:Install-Agent
     #     $Setup64File = $null
     #     $Setup32File = $null
 
-    #     foreach ($file in $SetupFile) {
+    #     foreach($file in $SetupFile)
+    #     {
     #         # check if file name ends with '64' or not
-    #         if ((-Not [string]::IsNullOrEmpty($file)) -and (Test-Path -Path $file -PathType Leaf)) {
+    #         if((-Not [string]::IsNullOrEmpty($file)) -and (Test-Path -Path $file -PathType Leaf))
+    #         {
     #             $name = [System.IO.Path]::GetFileNameWithoutExtension($file)
-    #             if ($name.Contains("64")) { $Setup64File = $file }
+    #             if($name.Contains("64")) { $Setup64File = $file }
     #             else { $Setup32File = $file }
     #         }
     #     }
 
     #     # Main logic - validate parameters
-    #     if (-Not ((Test-Path -Path $Setup64File -PathType Leaf) -or (Test-Path -Path $Setup32File -PathType Leaf))) {
+    #     if(-Not ((Test-Path -Path $Setup64File -PathType Leaf) -or (Test-Path -Path $Setup32File -PathType Leaf)))
+    #     {
     #         Throw "Agent msi files were not found."
     #     }
 
     #     #Test ComputerName value
-    #     if ($null -ne $ComputerName) {
-    #         foreach ($computer in $ComputerName) {
-    #             $Result = Test-ComputerConnection($computer)
-    #             if ($Result) {
-    #                 $code = Get-CodeInternal(Get-Command Get-WMIService)                          
-    #                 Invoke-Command -ComputerName $computer -ScriptBlock $code 
-    #                 $code = Get-CodeInternal(Get-Command Get-COMService)                          
-    #                 Invoke-Command -ComputerName $computer -ScriptBlock $code 
-    #                 Setup-MsiRemote $computer $Setup64File $Setup32File $TemplateFile $RemoteShare $RemotePath $RestartIIS $RestartWindowsServices $SharePointInstall $Arguments 
-    #             }
-    #         }
+    #     if($ComputerName -ne $null)
+    #     {
+    #        foreach($computer in $ComputerName)
+    #        {
+    #          $Result =  Test-ComputerConnection($computer)
+    #          if($Result)
+    #           {
+    #             $code = Get-CodeInternal(Get-Command Get-WMIService)                          
+	# 	        Invoke-Command -ComputerName $computer -ScriptBlock $code 
+    #             $code = Get-CodeInternal(Get-Command Get-COMService)                          
+	# 	        Invoke-Command -ComputerName $computer -ScriptBlock $code 
+    #             Setup-MsiRemote $computer $Setup64File $Setup32File $TemplateFile $RemoteShare $RemotePath $RestartIIS $RestartWindowsServices $SharePointInstall $Arguments 
+    #           }
+    #        }
          
     #         #Setup-MsiRemote $ComputerName $Setup64File $Setup32File $TemplateFile $RemoteShare $RemotePath $RestartIIS $RestartWindowsServices $Arguments
     #     }
-    #     else {
+    #     else
+    #     {
     #         #Setup locally
     #         $code = Get-CodeInternal(Get-Command Get-WMIService) 
     #         Invoke-Command -ScriptBlock $code 
     #         $code = Get-CodeInternal(Get-Command Get-COMService) 
-    #         Invoke-Command -ScriptBlock $code                 
+	# 	    Invoke-Command -ScriptBlock $code                 
     #         Setup-MsiLocal $Setup64File $Setup32File $TemplateFile $RestartIIS $RestartWindowsServices $SharePointInstall $Arguments 
     #     }
     # }
@@ -526,12 +624,6 @@ function installAgentBatch ($serverList, $MSIFIle, [Switch] $restartIIS)
     foreach ($server in $serverList) {
         if (Test-Connection $server -Quiet -Count 1) {
             $agentVersion = Get-Agent -ComputerName $server
-            
-            #servidores Sharepoint
-            if (($server -like "*SPWEB*") -or ($server -like "*SPAPP*")) {
-                Write-Host "$(Get-Date) [WARN] Servidor $server e´ de Sharepoint. Nao esta no escopo desse script"
-                $notUpdated ++
-            }
                 
             elseif ( ($agentVersion.Major -lt $MSIVersion[1]) -or (($agentVersion.Major -eq $MSIVersion[1]) -and ($agentVersion.Minor -lt $MSIVersion[2])) ) {
                 Write-Host "$(Get-Date) [INFO] Updating server $server (Current version $agentVersion)"
@@ -602,14 +694,33 @@ function getAppAgentConfigFile ($serverName, $agentConfigFolder)
         $path = "C:\ProgramData\AppDynamics\DotNetAgent\Config\config.xml"
     }
     else{
-        $path = -join($filepath, "config.xml") 
+        $path = -join($agentConfigFolder, "\config.xml") 
     }
     try {
         [xml]$appAgentConfig = Invoke-Command -ScriptBlock {Get-Content $path}
         return $appAgentConfig   
     }
     catch {
-        return "[ERROR] Error getting config file from remote server. Check connection and credentials"
+        return "[ERROR] Error getting config file from server $serverName. Check connection and credentials"
+    }
+}
+
+# saves changes made to an appagent config file on a remote server
+function saveAppAgentConfigFile([xml]$appAgentConfig, $serverName, $agentConfigFolder)
+{
+    if ($null -eq $agentConfigFolder) {
+        $path = "C:\ProgramData\AppDynamics\DotNetAgent\Config\config.xml"
+    }
+    else{
+        $path = -join($agentConfigFolder, "\config.xml") 
+    }
+
+    try {
+        Invoke-Command -ComputerName $serverName -ScriptBlock {$function:appAgentConfig.Save($using:path)}
+    }
+    catch {
+        $ErrorMessage = $_.Exception.Response.FullyQualifiedErrorId.value__
+        return "[ERROR] Unable to save config file on server $serverName. Error message: $ErrorMessage"
     }
 }
 
@@ -678,7 +789,7 @@ function setLicenseOnConfig ([xml]$appAgentConfig, $accountName, $connection, $l
     try {
         $response =  Invoke-RestMethod -Uri $url -Method 'GET' -Headers $connection.headers
         $appAgentConfig.'appdynamics-agent'.controller.account.password = "$($response.access_key)"    
-        return "License rule $licenseRuleName added to appagent config file with key $($response.access_key)"
+        return "[INFO] License rule $licenseRuleName added to appagent config file with key $($response.access_key)"
     }
     catch {
         $StatusCode = $_.Exception.Response.StatusCode.value__
