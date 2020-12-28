@@ -831,6 +831,7 @@ function getDeployedAppsLocal
             $appList[$i]["name"] = -join($site, $application.path)
             $appList[$i]["path"] = $application.path
             $applist[$i]["site"] = $site
+            $i++
         }    
     }
     return $appList
