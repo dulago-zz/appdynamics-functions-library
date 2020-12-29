@@ -875,7 +875,6 @@ function setIisAppsOnConfig([xml]$appAgentConfig, $webApplications)
         $siteName = $webApplications[$i]["site"]
         try {
             $add = setWebAppOnConfig -appAgentConfig $appAgentConfig -appName $appName -appPath $appPath -siteName $siteName
-            return $add
         }
         catch {
             return "[ERROR] Unable to set application $appName on config.xml file"
