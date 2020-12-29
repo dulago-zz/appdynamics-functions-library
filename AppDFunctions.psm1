@@ -806,19 +806,28 @@ function setLicenseOnConfig ([xml]$appAgentConfig, $accountName, $connection, $l
 # adds an IIS web application to an appagent config file
 function setWebAppOnConfig([xml]$appAgentConfig, $appName, $appPath, $siteName)
 {
-    $controllerApp = $appAgentConfig.CreateNode("element", "application", "")
-    $controllerApp.SetAttribute("name", $appName)
-    $appAgentConfig.'appdynamics-agent'.controller.applications.AppendChild($controllerApp)
 
-    $application = $appAgentConfig.CreateNode("element", "application", "")
-    $application.SetAttribute("controller-application", $appName)
-    $application.SetAttribute("path", $appPath)
-    $application.SetAttribute("site", $siteName)
-    $tier = $appAgentConfig.CreateNode("element", "tier", "")
-    $tier.SetAttribute("name", $appName)
-    $application.AppendChild($tier)
+    if (-not (($appAgentConfig.'appdynamics-agent'.controller.applications.application.name.Contains($appName)) `
+        -and ($appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.application.'controller-application'.Contains($appName)) `
+        -and ($appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.application.path.Contains($appPath))))
+    {
+        $controllerApp = $appAgentConfig.CreateNode("element", "application", "")
+        $controllerApp.SetAttribute("name", $appName)
+        $appAgentConfig.'appdynamics-agent'.controller.applications.AppendChild($controllerApp)
     
-    $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.AppendChild($application)
+        $application = $appAgentConfig.CreateNode("element", "application", "")
+        $application.SetAttribute("controller-application", $appName)
+        $application.SetAttribute("path", $appPath)
+        $application.SetAttribute("site", $siteName)
+        $tier = $appAgentConfig.CreateNode("element", "tier", "")
+        $tier.SetAttribute("name", $appName)
+        $application.AppendChild($tier)
+        
+        $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.AppendChild($application)
+
+        return "[INFO] Web application $appName successfully added to config file"
+    }
+    else{return "[INFO] Web application $appName already on config file. No changes made"}
 }
 
 # returns an object containing all web applications deployed on localhost's IIS 
@@ -859,16 +868,15 @@ function getDeployedAppsRemote($serverName)
 function setIisAppsOnConfig([xml]$appAgentConfig, $webApplications)
 {
     for ($i = 0; $i -lt $webApplications.Count; $i++) {
-        # if (($null -eq ($appAgentConfig.'appdynamics-agent'.controller.applications | findstr WebApp/localiza/NPCProcessador2)) -and ($null -eq $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications)) {
-            $appName = $webApplications[$i]["name"]
-            $appPath = $webApplications[$i]["path"]
-            $siteName = $webApplications[$i]["site"]
-            try {
-                setWebAppOnConfig -appAgentConfig $appAgentConfig -appName $appName -appPath $appPath -siteName $siteName
-            }
-            catch {
-                return "[ERROR] Unable to set application $appName on config.xml file"
-            }
-        # }
+        $appName = $webApplications[$i]["name"]
+        $appPath = $webApplications[$i]["path"]
+        $siteName = $webApplications[$i]["site"]
+        try {
+            $add = setWebAppOnConfig -appAgentConfig $appAgentConfig -appName $appName -appPath $appPath -siteName $siteName
+            return $add
+        }
+        catch {
+            return "[ERROR] Unable to set application $appName on config.xml file"
+        }
     }
 }
