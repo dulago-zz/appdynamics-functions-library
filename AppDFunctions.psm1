@@ -73,7 +73,7 @@ function getConnection ($accountName, $username, $password)
 
     $token = $response.Headers.'Set-Cookie' -split "="
     $token = $token -split ";"
-    $headers.Add("X-CSRF-TOKEN", $token[6])
+    $headers.Add("X-CSRF-TOKEN", $token[7])
     
     $connection = New-Object -TypeName PSCustomObject -Property @{}
     $connection | Add-Member -Force -MemberType NoteProperty -Name headers -Value $headers
