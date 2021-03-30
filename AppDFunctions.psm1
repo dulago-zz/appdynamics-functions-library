@@ -737,41 +737,41 @@ function setEmptyConfig ([xml]$appAgentConfig)
     $appAgentConfig.'appdynamics-agent'.controller.SetAttribute("enable_tls12", "true")
 
     $appAgentConfig.'appdynamics-agent'.controller.RemoveChild($appAgentConfig.'appdynamics-agent'.controller.application)
-    $applicationElement = $appAgentConfig.CreateNode("element", "applications", "")
+    $applicationElement = $appAgentConfig.CreateNode("element", "applications", "") > $null
     $childApp = $appAgentConfig.CreateNode("element", "application", "")
-    $childApp.SetAttribute("name", "DefaultApplication")
-    $childApp.SetAttribute("default", "true")
-    $applicationElement.AppendChild($childApp)
-    $appAgentConfig.'appdynamics-agent'.controller.AppendChild($applicationElement)
+    $childApp.SetAttribute("name", "DefaultApplication") > $null
+    $childApp.SetAttribute("default", "true") > $null
+    $applicationElement.AppendChild($childApp) > $null
+    $appAgentConfig.'appdynamics-agent'.controller.AppendChild($applicationElement) > $null
 
     $account = $appAgentConfig.CreateNode("element", "account","")
-    $account.SetAttribute("name", "default")
-    $account.SetAttribute("password", "default")
-    $appAgentConfig.'appdynamics-agent'.controller.AppendChild($account)
+    $account.SetAttribute("name", "default") > $null
+    $account.SetAttribute("password", "default") > $null
+    $appAgentConfig.'appdynamics-agent'.controller.AppendChild($account) > $null
 
     $appAgents = $appAgentConfig.CreateNode("element", "app-agents","")
     $profReinstrumentation = $appAgentConfig.CreateNode("element", "profiler","")
     $profReinstrumentation.InnerXml = "<runtime-reinstrumentation />"
     $IIS = $appAgentConfig.CreateNode("element", "IIS","")
-    $automatic = $appAgentConfig.CreateNode("element", "automatic", "")
-    $automatic.SetAttribute("enabled", "true")
+    $automatic = $appAgentConfig.CreateNode("element", "automatic", "") > $null
+    $automatic.SetAttribute("enabled", "true") > $null
 
-    $IIS.AppendChild($automatic)
-    $appAgents.AppendChild($profReinstrumentation)
-    $appAgents.AppendChild($IIS)
-    $appAgentConfig.'appdynamics-agent'.AppendChild($appAgents)
+    $IIS.AppendChild($automatic) > $null
+    $appAgents.AppendChild($profReinstrumentation) > $null
+    $appAgents.AppendChild($IIS) > $null
+    $appAgentConfig.'appdynamics-agent'.AppendChild($appAgents) > $null
 
     $applications = $appAgentConfig.CreateNode("element", "applications", "")
     $application = $appAgentConfig.CreateNode("element", "application", "")
-    $application.SetAttribute("controller-application", "DefaultApplication")
-    $application.SetAttribute("path", "DefaultApplication")
-    $application.SetAttribute("site", "DefaultApplication")
+    $application.SetAttribute("controller-application", "DefaultApplication") > $null
+    $application.SetAttribute("path", "DefaultApplication") > $null
+    $application.SetAttribute("site", "DefaultApplication") > $null
     $tier = $appAgentConfig.CreateNode("element", "tier", "")
-    $tier.SetAttribute("name", "DefaultApplication")
+    $tier.SetAttribute("name", "DefaultApplication") > $null
 
-    $application.AppendChild($tier)
-    $applications.AppendChild($application)
-    $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.AppendChild($applications)
+    $application.AppendChild($tier) > $null
+    $applications.AppendChild($application) > $null
+    $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.AppendChild($applications) > $null
 }
 
 
@@ -807,23 +807,25 @@ function setLicenseOnConfig ([xml]$appAgentConfig, $accountName, $connection, $l
 function setWebAppOnConfig([xml]$appAgentConfig, $appName, $appPath, $siteName)
 {
 
-    if (-not (($appAgentConfig.'appdynamics-agent'.controller.applications.application.name.Contains($appName)) `
+    if (-not ( `
+        ($appAgentConfig.'appdynamics-agent'.controller.applications.application.name.Contains($appName)) `
         -and ($appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.application.'controller-application'.Contains($appName)) `
-        -and ($appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.application.path.Contains($appPath))))
+        -and ($appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.application.path.Contains($appPath)))
+        )
     {
         $controllerApp = $appAgentConfig.CreateNode("element", "application", "")
-        $controllerApp.SetAttribute("name", $appName)
-        $appAgentConfig.'appdynamics-agent'.controller.applications.AppendChild($controllerApp)
+        $controllerApp.SetAttribute("name", $appName) > $null
+        $appAgentConfig.'appdynamics-agent'.controller.applications.AppendChild($controllerApp) > $null
     
         $application = $appAgentConfig.CreateNode("element", "application", "")
-        $application.SetAttribute("controller-application", $appName)
-        $application.SetAttribute("path", $appPath)
-        $application.SetAttribute("site", $siteName)
+        $application.SetAttribute("controller-application", $appName) > $null
+        $application.SetAttribute("path", $appPath) > $null
+        $application.SetAttribute("site", $siteName) > $null
         $tier = $appAgentConfig.CreateNode("element", "tier", "")
-        $tier.SetAttribute("name", $appName)
-        $application.AppendChild($tier)
+        $tier.SetAttribute("name", $appName) > $null
+        $application.AppendChild($tier) > $null
         
-        $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.AppendChild($application)
+        $appAgentConfig.'appdynamics-agent'.'app-agents'.IIS.applications.AppendChild($application) > $null
 
         return "[INFO] Web application $appName successfully added to config file"
     }
@@ -873,7 +875,6 @@ function setIisAppsOnConfig([xml]$appAgentConfig, $webApplications)
         $siteName = $webApplications[$i]["site"]
         try {
             $add = setWebAppOnConfig -appAgentConfig $appAgentConfig -appName $appName -appPath $appPath -siteName $siteName
-            return $add
         }
         catch {
             return "[ERROR] Unable to set application $appName on config.xml file"
