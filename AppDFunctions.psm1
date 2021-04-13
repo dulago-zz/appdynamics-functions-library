@@ -889,8 +889,7 @@ function listAllApps($accountName, $connection)
     try 
     {
         $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Method Get -ContentType 'text/xml'
-        $content = $response.content 
-        [xml]$apps = $content 
+        $apps = $response.applications.application 
         return $apps
     }
     catch
@@ -909,7 +908,6 @@ function deleteApp($appID, $accountName, $connection)
     try 
     {
         $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Body ($body | ConvertTo-Json) -WebSession $connection.session -Method Post -UseBasicParsing
-        $content = $response.content
         return $true    
     }
     catch 
@@ -919,15 +917,16 @@ function deleteApp($appID, $accountName, $connection)
     }
 }
 
-# returns the value of a given metric 
-function getMetric($appID, $accountName, $connection, $metricPath, $duration)
+# returns the value of a given metric in the last given minutes
+# metric path should be passed as a string, ex: $metricPath = "Overall Application Performance|Calls per Minute"
+# aggregation options are: min, max, count, sum, value (average)
+function getMetric($appID, $accountName, $connection, $metricPath, $duration, $aggregation)
 {
     $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/rest/applications/$appID/metric-data?metric-path=$metricPath&time-range-type=BEFORE_NOW&duration-in-mins=$duration")
     try 
     {
         $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Method Get -ContentType 'text/xml'
-        $content = $response.content
-        $metric = [xml]$content
+        $metric = $response.'metric-datas'.'metric-data'.metricValues.'metric-value'.$aggregation
         return $metric
     }
     catch 
@@ -935,4 +934,26 @@ function getMetric($appID, $accountName, $connection, $metricPath, $duration)
         $StatusCode = $_.Exception.Response.StatusCode.value__
         return "[ERROR] Error getting metric $metric for app $appID (Status code $StatusCode)"    
     }
+}
+
+# returns an object containing all applications that reported at least once in last given days
+function listAppsReporting($accountName, $connection, $numberOfDays)
+{
+    $apps = listAllApps -accountName $accountName -connection $connection
+    $duration = $numberOfDays*1440
+
+    $reportingAppsList = @()
+    $apps | ForEach-Object -Parallel { 
+        Import-Module .\AppDFunctions.psm1
+        $appID = $_.id 
+        $metric = getMetric -appID $appID -accountName $using:accountname -connection $using:connection -duration $using:duration -aggregation "sum" -metricPath "Overall Application Performance|Calls per Minute"
+        if ($metric -gt 0) 
+        {
+            # $name = $_.name
+            # " $name"
+            "$($_.name)"
+        }
+    } -ThrottleLimit 8
+
+    return $apps
 }
