@@ -881,3 +881,58 @@ function setIisAppsOnConfig([xml]$appAgentConfig, $webApplications)
         }
     }
 }
+
+# list app applications on an appdynamics controller
+function listAllApps($accountName, $connection)
+{
+    $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/rest/applications")
+    try 
+    {
+        $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Method Get -ContentType 'text/xml'
+        $content = $response.content 
+        [xml]$apps = $content 
+        return $apps
+    }
+    catch
+    {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        return "[ERROR] Error getting applications (Status code $StatusCode)"     
+    }
+}
+
+# delete an application from an AppDynamics controller
+function deleteApp($appID, $accountName, $connection)
+{
+    $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/restui/allApplications/deleteApplication")
+    $body = "$appID"
+
+    try 
+    {
+        $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Body ($body | ConvertTo-Json) -WebSession $connection.session -Method Post -UseBasicParsing
+        $content = $response.content
+        return $true    
+    }
+    catch 
+    {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        return "[ERROR] Error deleting application $app (Status code $StatusCode)"     
+    }
+}
+
+# returns the value of a given metric 
+function getMetric($appID, $accountName, $connection, $metricPath, $duration)
+{
+    $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/rest/applications/$appID/metric-data?metric-path=$metricPath&time-range-type=BEFORE_NOW&duration-in-mins=$duration")
+    try 
+    {
+        $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Method Get -ContentType 'text/xml'
+        $content = $response.content
+        $metric = [xml]$content
+        return $metric
+    }
+    catch 
+    {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        return "[ERROR] Error getting metric $metric for app $appID (Status code $StatusCode)"    
+    }
+}
