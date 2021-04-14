@@ -949,11 +949,28 @@ function listAppsReporting($accountName, $connection, $numberOfDays)
         $metric = getMetric -appID $appID -accountName $using:accountname -connection $using:connection -duration $using:duration -aggregation "sum" -metricPath "Overall Application Performance|Calls per Minute"
         if ($metric -gt 0) 
         {
-            # $name = $_.name
-            # " $name"
             "$($_.name)"
         }
-    } -ThrottleLimit 8
+    } -ThrottleLimit 16
 
-    return $apps
+    return
+}
+
+function listAppsNotReporting($accountName, $connection, $numberOfDays)
+{
+    $apps = listAllApps -accountName $accountName -connection $connection
+    $duration = $numberOfDays*1440
+
+    $reportingAppsList = @()
+    $apps | ForEach-Object -Parallel { 
+        Import-Module .\AppDFunctions.psm1
+        $appID = $_.id 
+        $metric = getMetric -appID $appID -accountName $using:accountname -connection $using:connection -duration $using:duration -aggregation "sum" -metricPath "Overall Application Performance|Calls per Minute"
+        if (-not($metric -gt 0)) 
+        {
+            "$($_.name)"
+        }
+    } -ThrottleLimit 16
+
+    return
 }
