@@ -61,6 +61,7 @@ function getConnection ($accountName, $username, $password)
     $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
     $headers.Add("Authorization", $basicAuthValue)
     $headers.Add("Accept", "application/json, text/plain, */*")
+    $headers.Add("Content-Type", "application/json;charset=UTF-8")
     $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/auth?action=login")
     try {
         $response = Invoke-WebRequest $url -Method 'GET' -Headers $headers -Body $body -SessionVariable session
@@ -899,7 +900,7 @@ function listAllApps($accountName, $connection)
     }
 }
 
-# delete an application from an AppDynamics controller
+# delete an application from an AppDynamics controller. Returns the ID of deleted app in case of success
 function deleteApp($appID, $accountName, $connection)
 {
     $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/restui/allApplications/deleteApplication")
@@ -907,8 +908,8 @@ function deleteApp($appID, $accountName, $connection)
 
     try 
     {
-        $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Body ($body | ConvertTo-Json) -WebSession $connection.session -Method Post -UseBasicParsing
-        return $true    
+        $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Body $body -WebSession $connection.session -Method 'POST' -UseBasicParsing
+        return $appID    
     }
     catch 
     {
@@ -956,6 +957,7 @@ function listAppsReporting($accountName, $connection, $numberOfDays)
     return
 }
 
+# returns an object containing all applications that did not report at least once in last given days
 function listAppsNotReporting($accountName, $connection, $numberOfDays)
 {
     $apps = listAllApps -accountName $accountName -connection $connection
@@ -969,6 +971,26 @@ function listAppsNotReporting($accountName, $connection, $numberOfDays)
         if (-not($metric -gt 0)) 
         {
             "$($_.name)"
+        }
+    } -ThrottleLimit 16
+
+    return
+}
+
+
+function deleteAppsNotReporting($accountName, $connection, $numberOfDays)
+{
+    $apps = listAllApps -accountName $accountName -connection $connection
+    $duration = $numberOfDays*1440
+
+    $reportingAppsList = @()
+    $apps | ForEach-Object -Parallel { 
+        Import-Module .\AppDFunctions.psm1
+        $appID = $_.id 
+        $metric = getMetric -appID $appID -accountName $using:accountname -connection $using:connection -duration $using:duration -aggregation "sum" -metricPath "Overall Application Performance|Calls per Minute"
+        if (-not($metric -gt 0)) 
+        {
+            deleteApp -appID $appID -accountName $using:accountname -connection $using:connection
         }
     } -ThrottleLimit 16
 
