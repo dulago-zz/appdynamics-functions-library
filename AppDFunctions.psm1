@@ -943,7 +943,6 @@ function listAppsReporting($accountName, $connection, $numberOfDays)
     $apps = listAllApps -accountName $accountName -connection $connection
     $duration = $numberOfDays*1440
 
-    $reportingAppsList = @()
     $apps | ForEach-Object -Parallel { 
         Import-Module .\AppDFunctions.psm1
         $appID = $_.id 
@@ -963,7 +962,6 @@ function listAppsNotReporting($accountName, $connection, $numberOfDays)
     $apps = listAllApps -accountName $accountName -connection $connection
     $duration = $numberOfDays*1440
 
-    $reportingAppsList = @()
     $apps | ForEach-Object -Parallel { 
         Import-Module .\AppDFunctions.psm1
         $appID = $_.id 
@@ -977,13 +975,12 @@ function listAppsNotReporting($accountName, $connection, $numberOfDays)
     return
 }
 
-
+# deletes all applications that did not report at least once in the last given days. Returns the ID of the deleted apps in case of success
 function deleteAppsNotReporting($accountName, $connection, $numberOfDays)
 {
     $apps = listAllApps -accountName $accountName -connection $connection
     $duration = $numberOfDays*1440
 
-    $reportingAppsList = @()
     $apps | ForEach-Object -Parallel { 
         Import-Module .\AppDFunctions.psm1
         $appID = $_.id 
@@ -991,6 +988,32 @@ function deleteAppsNotReporting($accountName, $connection, $numberOfDays)
         if (-not($metric -gt 0)) 
         {
             deleteApp -appID $appID -accountName $using:accountname -connection $using:connection
+        }
+    } -ThrottleLimit 16
+
+    return
+}
+
+# returns an object containing all applications that are not reporting and what servers are registering them on the Controller in the last given days
+function listNodesRegisteringAppsNotReporting($accountName, $connection, $numberOfDays)
+{
+    $apps = listAllApps -accountName $accountName -connection $connection
+    $duration = $numberOfDays*1440
+
+    "AppName, ServerName"
+    $apps | ForEach-Object -Parallel { 
+        Import-Module .\AppDFunctions.psm1
+        $appID = $_.id 
+        $metric = getMetric -appID $appID -accountName $using:accountname -connection $using:connection -duration $using:duration -aggregation "sum" -metricPath "Overall Application Performance|Calls per Minute"
+        if (-not($metric -gt 0)) 
+        {
+            $servers = getAppServers -appName $_.name -accountName $using:accountname -connection $using:connection
+            foreach ($server in $servers) 
+            {
+                "$($_.name), $($server.name)"    
+            }
+            # "$($_.name)"
+
         }
     } -ThrottleLimit 16
 
