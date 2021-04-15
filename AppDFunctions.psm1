@@ -1019,3 +1019,26 @@ function listNodesRegisteringAppsNotReporting($accountName, $connection, $number
 
     return
 }
+
+# creates a HTTP Request action on an application using a given HTTP template. Returns the properties of the action created
+function createHttpRequestAction($appID, $accountName, $connection, $actionName, $httpRequestTemplate)
+{
+    $actionBody = New-Object -TypeName PSCustomObject -Property @{}
+    $actionBody | Add-Member -Force -MemberType NoteProperty -Name actionType -Value "HTTP_REQUEST"
+    $actionBody | Add-Member -Force -MemberType NoteProperty -Name name -Value "$actionName"
+    $actionBody | Add-Member -Force -MemberType NoteProperty -Name httpRequestTemplateName  -Value "$httpRequestTemplate"
+
+    $actionBody = $actionBody | ConvertTo-Json
+
+    $url = -join ("https://", $accountName, ".saas.appdynamics.com/controller/alerting/rest/v1/applications/", $appID, "/actions")
+    try 
+    {
+        $createAction = Invoke-RestMethod "https://localizabrasil.saas.appdynamics.com/controller/alerting/rest/v1/applications/$appID/actions" -Method 'POST' -Headers $connection.headers -Body $actionBody   
+        return $createAction
+    }
+    catch 
+    {
+        $StatusCode = $_.Exception.Response.StatusCode.value__
+        return "[ERROR] Error getting metric $metric for app $appID (Status code $StatusCode)"    
+    }
+}
