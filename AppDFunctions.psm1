@@ -928,6 +928,11 @@ function getMetric($appID, $accountName, $connection, $metricPath, $duration, $a
     {
         $response = Invoke-RestMethod -Uri $url -Headers $connection.headers -Method Get -ContentType 'text/xml'
         $metric = $response.'metric-datas'.'metric-data'.metricValues.'metric-value'.$aggregation
+        if ($metric -eq $null)
+        {
+            $metric = 0
+        }
+        $metric = $metric -as [int]
         return $metric
     }
     catch 
@@ -1041,4 +1046,33 @@ function createHttpRequestAction($appID, $accountName, $connection, $actionName,
         $StatusCode = $_.Exception.Response.StatusCode.value__
         return "[ERROR] Error getting metric $metric for app $appID (Status code $StatusCode)"    
     }
+}
+
+# compares the performance (avg response time and error rate) of two applications over a given period of time in minutes. 
+# returns "true" if app1 is performing better than app2, and "false" if they are equal or if app2 is performing better
+function compareHealthApplications($app1ID, $app2ID, $accountName, $connection , $duration)
+{
+    $metricAvgRT = "Overall Application Performance|Average Response Time (ms)"
+    $metricErrorsMin = "Overall Application Performance|Errors per Minute"
+    $metricCallsMin = "Overall Application Performance|Calls per Minute"
+
+    $app1AvgRT = getMetric -appID $app1ID -accountName $accountName -connection $connection -metricPath $metricAvgRT -duration $duration -aggregation "value"
+    $app1Errors = getMetric -appID $app1ID -accountName $accountName -connection $connection -metricPath $metricErrorsMin -duration $duration -aggregation "sum"
+    $app1Calls = getMetric -appID $app1ID -accountName $accountName -connection $connection -metricPath $metricCallsMin -duration $duration -aggregation "sum"
+    $app1PctErrors = ($app1Errors/$app1Calls)*100
+
+    $app2AvgRT = getMetric -appID $app2ID -accountName $accountName -connection $connection -metricPath $metricAvgRT -duration $duration -aggregation "value"
+    $app2Errors = getMetric -appID $app2ID -accountName $accountName -connection $connection -metricPath $metricErrorsMin -duration $duration -aggregation "sum"
+    $app2Calls = getMetric -appID $app2ID -accountName $accountName -connection $connection -metricPath $metricCallsMin -duration $duration -aggregation "sum"
+    $app2PctErrors = ($app2Errors/$app2Calls)*100
+
+    if($app1PctErrors -lt $app2PctErrors)
+    {
+        if($app1AvgRT -lt $app2AvgRT)
+        {
+            return $true
+        }
+        else {return $false}
+    }
+    else {return $false }
 }
