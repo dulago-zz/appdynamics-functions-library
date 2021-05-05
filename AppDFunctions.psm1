@@ -1066,9 +1066,9 @@ function compareHealthApplications($app1ID, $app2ID, $accountName, $connection ,
     $app2Calls = getMetric -appID $app2ID -accountName $accountName -connection $connection -metricPath $metricCallsMin -duration $duration -aggregation "sum"
     $app2PctErrors = ($app2Errors/$app2Calls)*100
 
-    if($app1PctErrors -lt $app2PctErrors)
+    if( $app1PctErrors -lt ($app2PctErrors*0,9) )
     {
-        if($app1AvgRT -lt $app2AvgRT)
+        if( $app1AvgRT -lt ($app2AvgRT*0,9) )
         {
             return $true
         }
